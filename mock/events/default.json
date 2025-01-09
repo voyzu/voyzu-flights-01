@@ -1,0 +1,8 @@
+{
+  "request_id": "mock-index",
+  "route": {
+    "component_root_url": "http://localhost:25001",
+    "file_friendly_route": "#GET",
+    "url": "http://localhost:2500"
+  }
+}

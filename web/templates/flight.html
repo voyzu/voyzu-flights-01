@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta data-voyzu-page-description="{{pageDescription}}">
+
+  <title>voyzu framework: save flight</title>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" />
+
+  <!-- Shoelace -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.19.0/cdn/themes/light.css" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.19.0/cdn/shoelace.js"></script>
+
+  <!-- site global css -->
+  <link rel="stylesheet" href="/public/css/root.css">
+  <link rel="stylesheet" href="/public/css/layout.css">
+  <link rel="stylesheet" href="/public/css/style.css">
+
+  <style>
+    .toolbar {
+      background-color: var(--themeLightGray);
+      padding: 10px;
+      margin-bottom: 20px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .centred {
+      display: flex;
+      justify-content: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .form-two-col {
+      display: grid;
+      grid-gap: 10px;
+      grid-template-columns: 1fr 2fr;
+      grid-template-rows: repeat(1);
+      width: 600px;
+      background-color: #f5f5f5;
+      padding: 10px;
+    }
+
+    .col-one {
+      grid-column: 1;
+    }
+
+    .col-two {
+      grid-column: 2;
+    }
+
+    .invalid-text {
+      margin-top: 4px;
+      color: var(--sl-color-danger-500);
+      font-size: 0.875rem;
+    }
+
+    .invalid-input::part(input) {
+      border-style: solid;
+      outline: none;
+      border-color: var(--sl-color-danger-500);
+    }
+
+    sl-input.invalid-input:focus-within::part(base) {
+      box-shadow: 0 0 0 var(--sl-focus-ring-width) var(--sl-color-danger-300);
+    }
+
+
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <!-- site header -->
+    {{headerHtml}}
+
+    <!-- site (left hand) navigation -->
+    <nav>
+      {{navHtml}}
+    </nav>
+    <main>
+      <h3 style="margin-bottom: 10px;">{{pageHeading}}</h3>
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div>
+          <sl-button id="save-button" variant="primary" href="{{saveVoucherUrl}}"><i
+              class="fa-solid fa-cloud-arrow-up"></i>&nbsp;&nbsp;&nbsp;Save Flight</sl-button>
+        </div>
+      </div>
+
+      <!-- Loading div (spinner)-->
+      <div id="loading-div" class="centred hidden" style="margin-bottom: 20px">
+        <i class="fa fa-sync fa-spin"></i> <span id="loading-div-text" style="margin-left: 10px;"></span>
+      </div>
+
+      <!-- page alert message (hidden initially) -->
+      <div id="page-alert-flex">
+        <sl-alert id="page-alert" variant="primary" style="margin-bottom: 20px;margin-top: 20px;">
+          <sl-icon id="icon-slot" slot="icon" name="info-circle"></sl-icon>
+          <strong><span id="alert-heading"></span></strong><br />
+          <span id="alert-message"></span>
+        </sl-alert>
+      </div>
+
+      <!-- data form -->
+      <div class="form-two-col">
+        <div class="col-one">
+          Id*
+        </div>
+        <div class="col-two">
+          <sl-input id="id" data-label="Id" required disabled></sl-input>
+        </div>
+
+        <div class="col-one">
+          Airline
+        </div>
+
+        <div class="col-two">
+          <sl-select id="airline" data-label="Airline" required>
+            {% for airline in airlines %}
+            <sl-option value="{{airline.value}}">{{airline.text}}</sl-option>
+            {% endfor %}
+          </sl-select>
+        </div>
+
+        <div class="col-one">
+          Flight Number
+        </div>
+        <div class="col-two">
+          <sl-input id="flightNumber" data-label="Flight Number" required></sl-input>
+        </div>
+
+        <div class="col-one">
+          Origin
+        </div>
+        <div class="col-two">
+          <sl-input id="origin" data-label="Origin" required></sl-input>
+        </div>
+
+        <div class="col-one">
+          Flight Length*
+        </div>
+        <div class="col-two">
+          <sl-input id="flightLength" type="number" step=".01" data-label="Flight Length"
+            data-step-mismatch-message="Enter amount up to two decimal places" placeholder="0.00" required></sl-input>
+        </div>
+
+        <div class="col-one">
+          Arrival Date
+        </div>
+        <div class="col-two">
+          <sl-input type="date" id="arrivalDate" data-label="Arrival Date"></sl-input>
+        </div>
+
+        <div class="col-one">
+          Arrival Time
+        </div>
+        <div class="col-two">
+          <sl-input id="arrivalTime" data-label="Arrival Time" pattern="^([01]?[0-9]|2[0-3]):([0-5][0-9])$"
+            data-pattern-mismatch-message="Enter a valid 24 hour time, e.g. 23:45"></sl-input>
+        </div>
+
+        <div class="col-one">
+          Processed
+        </div>
+        <div class="col-two">
+          <sl-checkbox id="processed" data-label="Processed"></sl-checkbox>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- site footer -->
+    {{footerHtml}}
+  </div>
+
+  <script>
+
+    // initialize form
+    const flight = JSON.parse(`{{flight}}`);
+
+    // form load
+    document.addEventListener('DOMContentLoaded', function () {
+      // bind input fields to the flight object using injected "populateContainer" javascript function
+      populateContainer(document.querySelector('.form-two-col'), flight);
+
+      // listen for field changes in the bound form, this is used to mark a field as valid or invalid once initial validation has been done
+      wireUpChanges(document.querySelector('.form-two-col'));
+    });
+
+    // functions
+
+    // save button clicked.  Add or update flight
+    document.getElementById('save-button').addEventListener('click', async (event) => {
+
+      // hide page alert
+      hideAlert(document.querySelector('#page-alert'));
+      document.querySelector('#loading-div').classList.add('hidden');
+
+      // check form is valid, using injected "checkValidity" function
+      if (!checkValidity(document.querySelector('.form-two-col'))) {
+        showAlert(document.querySelector('#page-alert'), 'danger', 'Flight not saved', 'Please correct all errors marked below in red and try again');
+        return
+      }
+
+      document.querySelector('#loading-div').classList.remove('hidden');
+      document.querySelector('#loading-div-text').textContent = 'saving flight...'
+
+      // generate a flight object from our completed form
+      const flightFromForm = generateObject(document.querySelector('.form-two-col'));
+      Object.assign(flight, flightFromForm);
+
+      // call either the add or update API (depending on the injected values)
+      const response = await fetch('{{saveUrl}}', {
+        method: '{{saveMethod}}',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(flight)
+      });
+
+      document.querySelector('#loading-div').classList.add('hidden');
+
+      if (!response.ok) {
+        try {
+          const responseJson = await response.json();
+          showAlert(document.querySelector('#page-alert'), 'danger', 'Flight not saved', responseJson?.errorMessage ?? 'There was a problem saving the flight');
+        } catch {
+          showAlert(document.querySelector('#page-alert'), 'danger', 'Flight not saved', 'There was a problem saving the flight');
+        }
+
+        return;
+      }
+
+      showAlert(document.querySelector('#page-alert'), 'success', 'Flight Saved', `The flight information has been saved`)
+    })
+
+
+  </script>
+
+  <!-- injected JavaScript code -->
+  {{jsCode}}
+
+</body>
+
+</html>

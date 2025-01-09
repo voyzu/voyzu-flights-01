@@ -1,0 +1,173 @@
+<html>
+
+<head>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta data-voyzu-page-description="{{pageDescription}}">
+    <title>voyzu framework: workflow example</title>
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="https://crm-assets.voyzu.com/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://crm-assets.voyzu.com/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://crm-assets.voyzu.com/favicon/favicon-16x16.png">
+    <link rel="manifest" href="https://crm-assets.voyzu.com/favicon/site.webmanifest">
+    <link rel="mask-icon" href="https://crm-assets.voyzu.com/favicon/safari-pinned-tab.svg" color="#5bbad5">
+    <link rel="shortcut icon" href="https://crm-assets.voyzu.com/favicon/favicon.ico">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-config" content="https://crm-assets.voyzu.com/favicon/browserconfig.xml">
+    <meta name="theme-color" content="#ffffff">
+    <!-- end favicon -->
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" />
+
+    <!-- Shoelace -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.19.0/cdn/themes/light.css" />
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.19.0/cdn/shoelace.js"></script>
+
+    <link rel="stylesheet" href="/public/css/root.css">
+    <link rel="stylesheet" href="/public/css/layout.css">
+    <link rel="stylesheet" href="/public/css/style.css">
+
+</head>
+
+<style>
+    .toolbar {
+        background-color: var(--themeLightGray);
+        padding: 10px;
+        margin-bottom: 20px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .hidden {
+        display: none;
+    }
+</style>
+
+<body>
+    <div class="container">
+        {{headerHtml}}
+        <nav>
+            {{navHtml}}
+        </nav>
+        <main>
+            <h3 style="margin-bottom: 10px;">Process flights</h3>
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div>
+                    <sl-button id="create-workflow" variant="primary"><i
+                            class="fa-solid fa-gears"></i>&nbsp;&nbsp;&nbsp;Process Flights</sl-button>
+                </div>
+            </div>
+
+            <!-- page alert message (hidden initially) -->
+            <div id="page-alert-flex">
+                <sl-alert id="page-alert" variant="primary" style="margin-bottom: 20px;margin-top: 20px;">
+                    <sl-icon id="icon-slot" slot="icon" name="info-circle"></sl-icon>
+                    <strong><span id="alert-heading"></span></strong><br />
+                    <span id="alert-message"></span>
+                </sl-alert>
+            </div>
+
+            <sl-progress-bar value="2" class="hidden"></sl-progress-bar>
+            <div id="status"></div>
+        </main>
+        {{footerHtml}}
+    </div>
+
+    <script>
+
+        const createWorkflowUrl = '{{createWorkflowUrl}}'
+        const pollWorkflowUrl = '{{pollWorkflowUrl}}'
+
+        // module level variables
+        let WorkflowId
+
+        document.getElementById('create-workflow').addEventListener('click', async (event) => {
+
+            hideAlert(document.querySelector('#page-alert'));
+            document.getElementById("create-workflow").disabled = true;
+            document.querySelector('sl-progress-bar').value = 2;
+            document.querySelector('sl-progress-bar').textContent = '';
+            document.querySelector('sl-progress-bar').classList.remove('hidden');
+            document.getElementById('status').innerText = "initializing...";
+
+            const response = await fetch('{{createWorkflowUrl}}', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            });
+
+            if (!response.ok) {
+                try {
+                    const responseJson = await response.json();
+                    showAlert(document.querySelector('#page-alert'), 'danger', 'Flights not processed', responseJson?.errorMessage ?? 'There was a problem processing the flights');
+                } catch {
+                    showAlert(document.querySelector('#page-alert'), 'danger', 'Flights not processed', 'There was a problem processing the flights');
+                }
+
+                document.querySelector('sl-progress-bar').classList.add('hidden');
+                document.querySelector('sl-progress-bar').value = 2;
+                document.querySelector('sl-progress-bar').textContent = '';
+                document.getElementById("create-workflow").disabled = false;
+                document.getElementById('status').innerText = "";
+                return;
+            }
+
+            const json = await response.json();
+
+            WorkflowJobId = json.requestId;
+
+            setInterval(pollWorkflowJob, 1000);
+
+        })
+
+        async function pollWorkflowJob() {
+
+            if (!WorkflowJobId) {
+                return
+            }
+
+            let pollUrl = pollWorkflowUrl.replace('{requestId}', WorkflowJobId)
+
+            const response = await fetch(pollUrl);
+            const json = await response.json();
+
+            const status = json.status;
+
+            let statusText = `Workflow status ${status.status} ${status.commentary}`;
+            document.getElementById('status').innerText = statusText;
+            document.querySelector('sl-progress-bar').value = status.percentComplete;
+            document.querySelector('sl-progress-bar').textContent = `${status.percentComplete}%`;
+
+            if (status.status === 'PROCESSED' || status.status === 'FAIL') {
+                WorkflowJobId = undefined //stop polling
+                document.querySelector('sl-progress-bar').classList.add('hidden');
+                document.querySelector('sl-progress-bar').value = 2;
+                document.querySelector('sl-progress-bar').textContent = '';
+                document.getElementById("create-workflow").disabled = false;
+                document.getElementById('status').innerText = "";
+            }
+
+            if (status.status === 'PROCESSED') {
+                showAlert(document.querySelector('#page-alert'), 'success', 'Flights processed', status.commentary ?? 'All flights have been processed');
+            } else if (status.status === 'FAIL') {
+                showAlert(document.querySelector('#page-alert'), 'danger', 'Flights processed', status.commentary ?? 'All flights may not have been processed');
+            }
+        }
+
+    </script>
+
+    {{jsCode}}
+
+</body>
+
+</html>

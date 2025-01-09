@@ -1,0 +1,39 @@
+{
+    "headers": {
+      "connection": "upgrade",
+      "host": "voyzu-flights.voyzu.net",
+      "x-voyzu-proxy": "nginix",
+      "x-request-id": "c180a7ed6fd682245d3246fe746f2860",
+      "x-real-ip": "11.22.33.44",
+      "x-forwarded-for": "11.22.33.44",
+      "x-forwarded-proto": "https",
+      "cache-control": "max-age=0",
+      "sec-ch-ua": "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"Linux\"",
+      "upgrade-insecure-requests": "1",
+      "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "sec-fetch-site": "same-origin",
+      "sec-fetch-mode": "navigate",
+      "sec-fetch-user": "?1",
+      "sec-fetch-dest": "document",
+      "referer": "https://voyzu-flights.voyzu.net/",
+      "accept-encoding": "gzip, deflate, br, zstd",
+      "accept-language": "en-US,en-NZ;q=0.9,en;q=0.8",
+      "cookie": "_rndp=rnd.1.1733093999885.389990876642197929"
+    },
+    "request_values": {
+      "cookie": {
+        "_rndp": "rnd.1.1733093999885.389990876642197929"
+      },
+      "query_string_values": {}
+    },
+    "route": {
+      "component_domain": "voyzu-flights.voyzu.net",
+      "component_root_url": "voyzu-flights.voyzu.net",
+      "file_friendly_route": "#flights#GET",
+      "raw_url": "/flights",
+      "url": "voyzu-flights.voyzu.net/flights"
+    }
+  }

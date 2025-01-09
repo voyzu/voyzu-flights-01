@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta data-voyzu-page-description="{{pageDescription}}">
+
+  <title>voyzu framework: airport flights board</title>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" />
+
+  <!-- Shoelace -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.17.1/cdn/themes/light.css" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.17.1/cdn/shoelace.js"></script>
+
+  <!-- Includes all JS & CSS for the JavaScript Data Grid -->
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
+
+  <link rel="stylesheet" href="/public/css/root.css">
+  <link rel="stylesheet" href="/public/css/layout.css">
+  <link rel="stylesheet" href="/public/css/style.css">
+
+  <style>
+    .toolbar {
+      background-color: var(--themeLightGray);
+      padding: 10px;
+      margin-bottom: 20px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .centred {
+      display: flex;
+      justify-content: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .ag-theme-quartz {
+      --ag-grid-size: 6px;
+      margin: 5px;
+      margin-top: 20px;
+      height: 500px;
+    }
+
+    .ag-popup {
+      height: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    {{headerHtml}}
+    <nav>
+      {{navHtml}}
+    </nav>
+    <main>
+      <h3 style="margin-bottom: 10px;">Airport Flights Board</h3>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div>
+          <sl-button variant="primary" href="{{createFlightUrl}}"><i class="fa-solid fa-plane"></i>&nbsp;&nbsp;&nbsp;New
+            Flight</sl-button>
+          <sl-button variant="danger" id="delete-button" style="margin-left: 20px;"><i
+              class="fa-solid fa-trash"></i>&nbsp;&nbsp;&nbsp;Delete</sl-button>
+        </div>
+        <sl-button id="export-button"><i class="fa-solid fa-download"></i>&nbsp;&nbsp;&nbsp;Download</sl-button>
+      </div>
+
+      <!-- Loading div (spinner)-->
+      <div id="loading-div" class="centred hidden" style="margin-bottom: 20px">
+        <i class="fa fa-sync fa-spin"></i> <span id="loading-div-text" style="margin-left: 10px;"></span>
+      </div>
+
+      <!-- Page alert message -->
+      <div id="page-alert-flex">
+        <sl-alert id="page-alert" variant="primary" style="margin-bottom: 20px;margin-top: 20px;">
+          <sl-icon id="icon-slot" slot="icon" name="info-circle"></sl-icon>
+          <strong><span id="alert-heading"></span></strong><br />
+          <span id="alert-message"></span>
+        </sl-alert>
+      </div>
+
+      <!-- Search box -->
+      <div class="flex-container">
+        <sl-input id="filter-text-box" placeholder="Search ..." oninput="onFilterTextBoxChanged()" autofocus="true"
+          style="margin-left: 0px;"></sl-input>
+      </div>
+
+      <!-- AG Grid -->
+      <div id="myGrid" class="ag-theme-quartz"></div>
+    </main>
+    {{footerHtml}}
+  </div>
+
+  <script>
+
+    // initialize form
+    message = JSON.parse('{{message}}')
+
+    // form load
+    document.addEventListener('DOMContentLoaded', function () {
+      if (Object.keys(message).length > 0) {
+        showAlert(document.querySelector('#page-alert'), message.message_level.toLowerCase(), message.message_heading ?? 'Flight deleted', message.message)
+      }
+    });
+
+    document.getElementById('export-button').addEventListener('click', (event) => {
+      gridApi.exportDataAsCsv(getParams());
+    })
+
+    document.getElementById('delete-button').addEventListener('click', async (event) => {
+
+      document.querySelector('#loading-div').classList.add('hidden');
+      hideAlert(document.querySelector('#page-alert'))
+
+      const sel = gridApi.getSelectedRows()
+
+      if (sel.length === 0) {
+        showAlert(document.querySelector('#page-alert'), 'warning', 'No rows selected', 'There were no rows selected to delete');
+        return;
+      }
+
+      document.querySelector('#loading-div').classList.remove('hidden');
+      document.querySelector('#loading-div-text').textContent = 'deleting flight...'
+
+      const delUrl = `{{deleteUrl}}/${sel[0].id}`
+      const response = await fetch(delUrl, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      document.querySelector('#loading-div').classList.add('hidden');
+
+      if (!response.ok) {
+        try {
+          const responseJson = await response.json();
+          showAlert(document.querySelector('#page-alert'), 'danger', 'Flight not deleted', responseJson?.errorMessage || 'There was a problem deleting the flight');
+        } catch {
+          showAlert(document.querySelector('#page-alert'), 'danger', 'Flight not deleted', 'There was a problem deleting the flight');
+        }
+
+        return;
+      }
+
+      const responseJson = await response.json();
+
+      window.location.href = `.${window.location.pathname}?messageId=${responseJson.messageId}`;
+    })
+
+    function getParams() {
+      return {
+        allColumns: false
+      };
+    }
+
+
+    let gridApi;
+    const rowData = JSON.parse(`{{rowData}}`)
+
+
+    const gridOptions = {
+
+      rowSelection: {
+        mode: 'singleRow'
+      },
+
+      // enables pagination in the grid
+      pagination: true,
+
+      // sets 10 rows per page (default is 100)
+      paginationPageSize: 100,
+
+      // allows the user to select the page size from a predefined list of page sizes
+      // paginationPageSizeSelector: [10, 20, 50, 100],
+
+      // Data to be displayed
+      rowData: rowData,
+
+      tooltipShowDelay: 1000,
+
+      // Columns to be displayed (Should match rowData properties)
+      columnDefs: [
+        { field: "id", width: "80", cellRenderer: renderLink },
+        { field: "airline", filter: 'agTextColumnFilter', width: "170" },
+        { field: "flightNumber", filter: 'agTextColumnFilter', width: "130" },
+        { field: "origin", filter: 'agTextColumnFilter', width: "210" },
+        { field: "arrivalDate", filter: 'agTextColumnFilter', sort: "desc", width: "120" },
+        { field: "arrivalTime", filter: 'agTextColumnFilter', width: "120" },
+        { field: "processed", filter: 'agTextColumnFilter', width: "120" },
+      ]
+    };
+
+    function renderLink(params) {
+      const link = `<a href="/flight/${params.data.id}">${params.value}</a>`;
+      return link;
+    }
+
+    function onFilterTextBoxChanged() {
+      gridApi.setGridOption(
+        "quickFilterText",
+        document.getElementById("filter-text-box").value,
+      );
+    }
+
+    // Create Grid: Create new grid within the #myGrid div, using the Grid Options object
+    gridApi = agGrid.createGrid(document.querySelector("#myGrid"), gridOptions);
+
+  </script>
+
+  {{jsCode}}
+
+</body>
+
+</html>

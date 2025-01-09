@@ -1,0 +1,36 @@
+{
+    "name": "voyzu-flights-01",
+    "version": "0.1.0",
+    "description": "Example web application demonstrating some of the Voyzu Framework patterns",
+    "author": "Chris Lennon",
+    "repository": {
+        "type": "git",
+        "url": "git@github.com:voyzu/voyzu-flights-01.git"
+    },
+    "license": "MIT",
+    "scripts": {
+        "deploy": "node deploy/deploy.js",
+        "lint": "npx eslint . --fix",
+        "mock-web": "node mock/mock-web.js",
+        "mock-workflow": "node mock/mock-workflow.js",
+        "start": "node start.js",
+        "update-deps": "npx updates -u -m && npm install"
+    },
+    "type": "module",
+    "devDependencies": {
+        "@eslint/js": "^9.17.0",
+        "eslint": "^9.17.0",
+        "eslint-plugin-jsdoc": "^50.6.1",
+        "eslint-plugin-unicorn": "^56.0.1",
+        "glob": "^10.4.5",
+        "globals": "^15.13.0",
+        "updates": "^16.4.1"
+    },
+    "dependencies": {
+        "@ngneat/falso": "^7.2.0",
+        "date-fns": "^4.1.0",
+        "nunjucks": "^3.2.4",
+        "redis": "^4.7.0",
+        "voyzu-framework-01": "file:../voyzu-framework-01"
+    }
+}

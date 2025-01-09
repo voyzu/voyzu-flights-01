@@ -1,0 +1,7 @@
+*.env
+*.config
+config.js
+logs/
+mock/output/
+node_modules/
+package-lock.json
